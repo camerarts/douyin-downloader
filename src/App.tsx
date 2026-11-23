@@ -82,6 +82,8 @@ export default function App() {
   const [packStatus, setPackStatus] = useState('')
   const [broken, setBroken] = useState<Record<number, boolean>>({})
   const [zoom, setZoom] = useState<number | null>(null)
+  /** 正在保存的图片下标集合：给「保存」按钮即时反馈并防重复点击 */
+  const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const attr = document.documentElement.getAttribute('data-theme')
     if (attr === 'light' || attr === 'dark') return attr
@@ -294,6 +296,34 @@ export default function App() {
     }
   }, [zoom])
 
+  /**
+   * 单张保存：浏览器原生 <a download> 要等代理拉完整张图才落盘，
+   * 期间无反馈容易被连点。改为 fetch + 触发下载：
+   * 立刻进入 saving 态（转圈+禁点），完成后恢复并短暂显示「已保存」。
+   */
+  const saveOne = async (i: number, src: string, title: string) => {
+    if (saving[i]) return
+    setSaving((p) => ({ ...p, [i]: true }))
+    try {
+      // 与打包同策略：先试 CDN 直连，失败回退本站代理
+      const blob = await fetchBlobWithFallback(src, `${title || 'image'}_${i + 1}`)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${title || 'image'}_${i + 1}.jpg`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      setCopied(`saved-${i}`)
+    } catch {
+      setCopied(`save-fail-${i}`)
+    } finally {
+      setSaving((p) => ({ ...p, [i]: false }))
+      window.setTimeout(() => setCopied(''), 2200)
+    }
+  }
+
   return (
     <div className="app">
       <header className="top">
@@ -404,7 +434,15 @@ export default function App() {
                             className="tile-img"
                             title="点击查看大图"
                           />
-                          <a href={downloadUrl(src, `${d.title || 'image'}_${i + 1}`)} download>保存</a>
+                          <button
+                            type="button"
+                            className={`tile-save ${saving[i] ? 'is-saving' : ''} ${copied === `saved-${i}` ? 'is-done' : ''} ${copied === `save-fail-${i}` ? 'is-fail' : ''}`}
+                            onClick={() => void saveOne(i, src, d.title)}
+                            disabled={saving[i]}
+                            aria-label={`保存第 ${i + 1} 张`}
+                          >
+                            {saving[i] ? '下载中…' : copied === `saved-${i}` ? '已保存' : copied === `save-fail-${i}` ? '失败，点重试' : '保存'}
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -488,7 +526,14 @@ export default function App() {
             />
             <div className="lightbox-bar">
               <span className="lightbox-idx">{zoom + 1} / {d.images.length}</span>
-              <a className="lightbox-save" href={downloadUrl(d.images[zoom], `${d.title || 'image'}_${zoom + 1}`)} download onClick={(e) => e.stopPropagation()}>保存原图</a>
+              <button
+                type="button"
+                className={`lightbox-save ${saving[zoom] ? 'is-saving' : ''}`}
+                disabled={saving[zoom]}
+                onClick={(e) => { e.stopPropagation(); void saveOne(zoom, d.images[zoom], d.title) }}
+              >
+                {saving[zoom] ? '下载中…' : copied === `saved-${zoom}` ? '已保存' : '保存原图'}
+              </button>
               <button type="button" className="lightbox-x" aria-label="关闭大图" onClick={() => setZoom(null)}>
                 <Icon name="close" size={16} />
               </button>
