@@ -6,8 +6,8 @@ pages_build_output_dir = "./dist"
 compatibility_flags = []
 
 [vars]
-# 解析服务商：douparse（默认）
-PARSER_PROVIDER = "douparse"
+# 解析核心：自建匿名 H5 解析（完全免费，无需 API Key）
+PARSER_PROVIDER = "self-hosted-h5"
 
 # 是否在未配置 TURNSTILE_SECRET_KEY 时放行（本地开发 true，生产务必配密钥后设 false）
 ALLOW_UNVERIFIED = "false"

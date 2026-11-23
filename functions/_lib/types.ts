@@ -1,6 +1,4 @@
 export interface Env {
-  // 抖解 DouParse 开放 API Key（服务端密钥，禁止下发到前端）
-  DOUPARSE_API_KEY?: string
   // Cloudflare Turnstile：secret 服务端校验，site key 公开给前端
   TURNSTILE_SECRET_KEY?: string
   TURNSTILE_SITE_KEY?: string

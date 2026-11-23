@@ -7,7 +7,7 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
   const { request, env } = context
   const path = new URL(request.url).pathname
 
-  if (path === '/api/health') return json({ ok: true, provider: env.PARSER_PROVIDER ?? 'douparse' })
+  if (path === '/api/health') return json({ ok: true, provider: env.PARSER_PROVIDER ?? 'self-hosted-h5', free: true })
   if (path === '/api/parse') return handleParse(request, env)
   if (path === '/api/download') return handleDownload(request, env)
   if (path === '/api/config') {

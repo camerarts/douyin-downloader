@@ -1,5 +1,7 @@
-# 复制为 .dev.vars 后填入真实值；本地 wrangler pages dev 会自动读取
-DOUPARSE_API_KEY=dpk_xxxxxxxxxxxxxxxx
+# 复制为 .dev.vars；解析核心完全免费，无需任何 API Key。
 
-# 生产环境必配：Cloudflare Turnstile 密钥（site key 放前端 .env，secret key 放这里）
-TURNSTILE_SECRET_KEY=0xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# 本地开发跳过 Turnstile 校验（生产环境请勿设 true）
+ALLOW_UNVERIFIED=true
+
+# 可选：生产环境配置 Cloudflare Turnstile（secret key 放这里，site key 放前端）
+# TURNSTILE_SECRET_KEY=0xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
