@@ -9,6 +9,7 @@ export async function handleDownload(request: Request, _env: Env): Promise<Respo
   const u = new URL(request.url)
   const source = u.searchParams.get('source') ?? ''
   const filename = safeFilename(u.searchParams.get('filename') ?? 'douyin-media')
+  const inline = u.searchParams.get('inline') === '1'
 
   if (!source) return json({ error: '缺少资源地址', error_kind: 'invalid_input' }, 400)
 
@@ -51,8 +52,11 @@ export async function handleDownload(request: Request, _env: Env): Promise<Respo
 
   const headers = new Headers()
   headers.set('Content-Type', contentType)
-  headers.set('Content-Disposition', `attachment; filename="${safeFilename(finalName)}"; filename*=UTF-8''${encodeURIComponent(finalName)}`)
-  headers.set('Cache-Control', 'no-store')
+  // inline=1 用于 <img> 预览：不加 attachment，否则浏览器会当作下载导致图片不显示
+  if (!inline) {
+    headers.set('Content-Disposition', `attachment; filename="${safeFilename(finalName)}"; filename*=UTF-8''${encodeURIComponent(finalName)}`)
+  }
+  headers.set('Cache-Control', inline ? 'public, max-age=300' : 'no-store')
   const range = upstream.headers.get('Content-Range')
   if (range) headers.set('Content-Range', range)
   if (upstream.headers.get('Accept-Ranges')) headers.set('Accept-Ranges', upstream.headers.get('Accept-Ranges')!)

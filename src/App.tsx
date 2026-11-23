@@ -43,8 +43,8 @@ const EXAMPLES = [
   '也支持 https://v.douyin.com/xxxxx/ 这样的短链接',
 ]
 
-function downloadUrl(source: string, filename: string) {
-  return `/api/download?source=${encodeURIComponent(source)}&filename=${encodeURIComponent(filename)}`
+function downloadUrl(source: string, filename: string, inline = false) {
+  return `/api/download?source=${encodeURIComponent(source)}&filename=${encodeURIComponent(filename)}${inline ? '&inline=1' : ''}`
 }
 
 export default function App() {
@@ -184,7 +184,7 @@ export default function App() {
 
       {phase === 'success' && d && (
         <section className="result">
-          {d.cover && <img className="cover" src={downloadUrl(d.cover, `${d.title || 'cover'}_封面.jpg`)} alt="封面" />}
+          {d.cover && <img className="cover" src={downloadUrl(d.cover, `${d.title || 'cover'}_封面.jpg`, true)} alt="封面" />}
           <div className="info">
             <div className="author">{d.author ? `@${d.author}` : '抖音作品'}</div>
             <h2>{d.title || '（无标题）'}</h2>
@@ -226,7 +226,7 @@ export default function App() {
           <div className="grid">
             {d.images.map((src, i) => (
               <div className="tile" key={i}>
-                <img src={downloadUrl(src, `${d.title || 'image'}_${i + 1}`)} alt={`第 ${i + 1} 张`} loading="lazy" />
+                <img src={downloadUrl(src, `${d.title || 'image'}_${i + 1}`, true)} alt={`第 ${i + 1} 张`} loading="lazy" />
                 <a href={downloadUrl(src, `${d.title || 'image'}_${i + 1}`)} download>保存</a>
               </div>
             ))}

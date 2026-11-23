@@ -17,9 +17,13 @@ export function extractDouyinUrl(text: string): string | null {
 
 // 下载代理只允许平台 CDN 域名，防止 SSRF
 const CDN_HOSTS = [
-  'douyincdn.com', 'douyinstatic.com', 'douyin.com', 'snssdk.com',
-  'byteimg.com', 'bytecdn.cn', 'byteimg.com', 'zicdn.com', 'ixigua.com',
-  'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktok.com',
+  // 抖音系视频/图片 CDN
+  'douyincdn.com', 'douyinstatic.com', 'douyinvod.com', 'douyin.com',
+  'douyinpic.com', 'snssdk.com', 'snssdkimg.com', 'bytecdn.cn',
+  'byteimg.com', 'bytecdn.com', 'byteimg.com', 'zicdn.com', 'ixigua.com',
+  'memedata.cn', 'douyinlive.com',
+  'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktok.com', 'tiktokcdn-web.com',
+  // 其他平台
   'xhscdn.com', 'xiaohongshu.com', 'kuaishoucdn.com', 'kuaishou.com',
   'bilivideo.com', 'bilibili.com', 'hdslb.com',
 ]
