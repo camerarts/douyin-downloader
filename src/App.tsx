@@ -201,6 +201,8 @@ export default function App() {
 
   const d = result?.data
   const caption = d?.description || d?.title || ''
+  // 抖音接口里 title 常与文案相同，避免重复展示
+  const heading = d?.title && d.title !== caption ? d.title : ''
   const busyLabel = busy ? (phase === 'verifying' ? '验证中…' : '解析中…') : '开始解析'
 
   return (
@@ -324,7 +326,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {d.title && <h3 className="copy-title">{d.title}</h3>}
+                  {heading && <h3 className="copy-title">{heading}</h3>}
 
                   <div className="caption-box">
                     <p>{caption || '（该作品没有文案）'}</p>
@@ -335,8 +337,8 @@ export default function App() {
                       <Icon name={copied === 'caption' ? 'check' : 'copy'} size={15} />
                       {copied === 'caption' ? '已复制文案' : '一键复制文案'}
                     </button>
-                    {d.title && (
-                      <button type="button" className={`btn copy-btn ${copied === 'title' ? 'is-done' : ''}`} onClick={() => void copy(d.title, 'title')}>
+                    {heading && (
+                      <button type="button" className={`btn copy-btn ${copied === 'title' ? 'is-done' : ''}`} onClick={() => void copy(heading, 'title')}>
                         <Icon name={copied === 'title' ? 'check' : 'copy'} size={15} />
                         {copied === 'title' ? '已复制标题' : '复制标题'}
                       </button>

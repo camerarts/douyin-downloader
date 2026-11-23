@@ -124,6 +124,7 @@ textarea:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px 
 .btn-main:hover { border-color: var(--accent); filter: brightness(1.08); }
 .btn-main:disabled { opacity: .6; cursor: wait; }
 .btn.is-done { border-color: var(--accent); color: var(--accent); }
+.btn-main.is-done { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); border-color: var(--accent); }
 
 .alert { margin-top: 14px; padding: 11px 14px; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); border-radius: 8px; font-size: 13.5px; color: var(--accent); }
 .turnstile { margin-top: 14px; }
