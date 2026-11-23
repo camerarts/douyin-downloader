@@ -165,9 +165,9 @@ function normalize(item: H5Item): FreeParseResult | null {
 
   return {
     type: isImagePost ? 'images' : 'video',
-    title: (item.desc ?? '').slice(0, 300),
+    title: (item.desc ?? '').slice(0, 5000),
     author: (item.author?.nickname ?? '').slice(0, 80),
-    description: (item.desc ?? '').slice(0, 1000),
+    description: (item.desc ?? '').slice(0, 5000),
     cover: pickImageUrl(item.video?.cover?.url_list),
     videoUrl,
     videoUrlAlt: altUrl ? toNoWm(altUrl) : '',

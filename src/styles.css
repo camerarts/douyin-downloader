@@ -78,7 +78,7 @@ button { cursor: pointer; }
   gap: clamp(28px, 3.4vw, 64px); align-items: start;
 }
 .col-stage, .col-copy { min-width: 0; }
-.col-copy { position: sticky; top: calc(var(--top-h) + 24px); }
+.col-copy { position: static; } /* 取消吸顶，长文案可随页面完整滚动查看 */
 
 /* ---------- hero ---------- */
 .hero { padding: clamp(44px, 5.5vw, 76px) 0 clamp(28px, 3vw, 40px); }
@@ -197,7 +197,8 @@ textarea:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px 
 .copy-title { font-size: 17px; font-weight: 700; line-height: 1.5; letter-spacing: -.01em; margin: 17px 0 13px; }
 .caption-box {
   background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 15px 16px;
-  max-height: 340px; overflow-y: auto;
+  /* 文案完整展示，不再限高滚动 */
+  max-height: none; overflow: visible;
 }
 .caption-box p { font-size: 13.5px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .copy-actions { display: grid; gap: 8px; margin-top: 15px; }
