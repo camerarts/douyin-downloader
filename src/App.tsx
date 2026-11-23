@@ -42,7 +42,7 @@ function downloadUrl(source: string, filename: string, inline = false) {
   return `/api/download?source=${encodeURIComponent(source)}&filename=${encodeURIComponent(filename)}${inline ? '&inline=1' : ''}`
 }
 
-function Icon({ name, size = 16 }: { name: 'sun' | 'moon' | 'copy' | 'check' | 'arrow' | 'link' | 'play' | 'image' | 'music'; size?: number }) {
+function Icon({ name, size = 16 }: { name: 'sun' | 'moon' | 'copy' | 'check' | 'arrow' | 'link' | 'play' | 'image' | 'music' | 'zip'; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 20 20', 'aria-hidden': true } as const
   switch (name) {
     case 'sun':
@@ -63,6 +63,8 @@ function Icon({ name, size = 16 }: { name: 'sun' | 'moon' | 'copy' | 'check' | '
       return <svg {...common}><rect x="2.5" y="3.5" width="15" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" /><circle cx="7" cy="8" r="1.5" fill="currentColor" /><path d="M3 14l4-4 3.5 3.5L13 11l4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></svg>
     case 'music':
       return <svg {...common}><path d="M8 15V5l9-2v10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><circle cx="5.5" cy="15.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><circle cx="14.5" cy="13.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
+    case 'zip':
+      return <svg {...common}><path d="M10 2.5v11m0 0l-3.5-3.5M10 13.5l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M3.5 14.5v2A1.5 1.5 0 0 0 5 18h10a1.5 1.5 0 0 0 1.5-1.5v-2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
   }
 }
 
@@ -74,6 +76,9 @@ export default function App() {
   const [config, setConfig] = useState<Config>({ turnstileRequired: false, siteKey: '' })
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState('')
+  const [packing, setPacking] = useState(false)
+  const [packStatus, setPackStatus] = useState('')
+  const [broken, setBroken] = useState<Record<number, boolean>>({})
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const attr = document.documentElement.getAttribute('data-theme')
     if (attr === 'light' || attr === 'dark') return attr
@@ -150,6 +155,8 @@ export default function App() {
         throw new Error(payload.error || `解析失败（HTTP ${res.status}）`)
       }
       setResult(payload as ParseResult)
+      setBroken({})
+      setCopied('')
       setPhase('success')
     } catch (e) {
       setError(e instanceof Error ? e.message : '解析失败')
@@ -197,6 +204,65 @@ export default function App() {
     setTheme(next)
     document.documentElement.setAttribute('data-theme', next)
     try { localStorage.setItem('dy-theme', next) } catch { /* ignore */ }
+  }
+
+  /** 打包时取图：优先 CDN 直连（有 CORS），失败回退本站代理 */
+  const fetchBlobWithFallback = async (url: string, filename: string): Promise<Blob> => {
+    try {
+      const direct = await fetch(url, { mode: 'cors' })
+      if (direct.ok) return await direct.blob()
+    } catch { /* 直连不可用则回退代理 */ }
+    const proxied = await fetch(downloadUrl(url, filename, true))
+    if (!proxied.ok) throw new Error(`下载失败（HTTP ${proxied.status}）`)
+    return await proxied.blob()
+  }
+
+  const packAllImages = async () => {
+    if (!d?.images?.length || packing) return
+    setPacking(true)
+    const total = d.images.length
+    let cursor = 0
+    let ok = 0
+    let failed = 0
+    setPackStatus(`准备中 · 共 ${total} 张`)
+    try {
+      // 按需加载，避免增大首屏体积
+      const { default: JSZip } = await import('jszip')
+      const zip = new JSZip()
+      // 4 路并发，避免一次性打满连接；JPEG 已压缩，ZIP 用 STORE 更快
+      const worker = async () => {
+        while (cursor < total) {
+          const i = cursor++
+          setPackStatus(`正在获取 ${i + 1} / ${total}`)
+          try {
+            const blob = await fetchBlobWithFallback(d.images[i], `${i + 1}`)
+            zip.file(`${String(i + 1).padStart(2, '0')}.jpg`, blob)
+            ok++
+          } catch {
+            failed++
+          }
+        }
+      }
+      await Promise.all([worker(), worker(), worker(), worker()])
+      if (!ok) throw new Error('所有图片获取失败，请稍后重试')
+      setPackStatus('正在生成 ZIP…')
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' })
+      const objectUrl = URL.createObjectURL(blob)
+      const cleanTitle = (d.title || 'douyin').replace(/[\\/:*?"<>|\r\n]/g, '_').slice(0, 40)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = `${cleanTitle}_图集_${ok}张.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+      setPackStatus(failed ? `已完成 ${ok} 张，${failed} 张失败` : `已打包 ${ok} 张`)
+    } catch (e) {
+      setPackStatus(e instanceof Error ? e.message : '打包失败')
+    } finally {
+      setPacking(false)
+      window.setTimeout(() => setPackStatus(''), 5000)
+    }
   }
 
   const d = result?.data
@@ -270,7 +336,7 @@ export default function App() {
 
                 {d.type === 'video' && d.videoUrl && (
                   <div className="stage">
-                    <video controls playsInline preload="metadata" poster={d.cover ? downloadUrl(d.cover, `${d.title || 'cover'}_封面.jpg`, true) : undefined} src={downloadUrl(d.videoUrl, d.title || 'douyin-video', true)} />
+                    <video controls playsInline preload="metadata" poster={d.cover || undefined} src={downloadUrl(d.videoUrl, d.title || 'douyin-video', true)} />
                   </div>
                 )}
 
@@ -291,11 +357,24 @@ export default function App() {
 
                 {d.images.length > 0 && (
                   <div className="gallery">
-                    <h3 className="gallery-h">图集 · {d.images.length} 张</h3>
+                    <div className="gallery-head">
+                      <h3 className="gallery-h">图集 · {d.images.length} 张</h3>
+                      <button type="button" className="btn btn-main btn-s" onClick={() => void packAllImages()} disabled={packing}>
+                        <Icon name="zip" size={15} />
+                        {packing ? packStatus || '打包中…' : `一键下载全部 (${d.images.length})`}
+                      </button>
+                    </div>
+                    {packing && <div className="pack-bar"><span /></div>}
                     <div className="grid">
                       {d.images.map((src, i) => (
                         <div className="tile" key={i}>
-                          <img src={downloadUrl(src, `${d.title || 'image'}_${i + 1}`, true)} alt={`第 ${i + 1} 张`} loading="lazy" />
+                          <img
+                            src={broken[i] ? downloadUrl(src, `${d.title || 'image'}_${i + 1}`, true) : src}
+                            onError={() => setBroken((prev) => (prev[i] ? prev : { ...prev, [i]: true }))}
+                            alt={`第 ${i + 1} 张`}
+                            loading={i < 5 ? 'eager' : 'lazy'}
+                            decoding="async"
+                          />
                           <a href={downloadUrl(src, `${d.title || 'image'}_${i + 1}`)} download>保存</a>
                         </div>
                       ))}
