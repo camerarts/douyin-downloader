@@ -6,3 +6,6 @@ dist/
 .wrangler/
 *.log
 .DS_Store
+
+# edge-proxy 复用根依赖
+edge-proxy/node_modules

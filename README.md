@@ -62,6 +62,7 @@ git push -u origin main
 本项目已通过 Cloudflare API 绑定 GitHub 仓库，**每次 push 到 main 自动构建部署**：
 
 - 线上地址：https://douyin-downloader-git.pages.dev
+- 自定义域名：https://douyin.mindscopelab.org
 - GitHub 仓库：https://github.com/camerarts/douyin-downloader
 - 构建配置：`npm run build` → 输出 `dist`，根目录 `/`
 - 环境变量：免费方案无需任何解析 Key；`ALLOW_UNVERIFIED=true`（默认放行）
@@ -80,9 +81,35 @@ git push -u origin main
 2. 填入上面两个环境变量，重新部署
 3. 前端通过 `/api/config` 自动判断是否展示验证，后端强制校验 Token
 
-### 4. 自定义域名（可选）
+### 4. 自定义域名（已配置）
 
-Pages 项目 → **Custom domains** → 添加域名，按提示改 DNS。
+- 自定义域名：https://douyin.mindscopelab.org
+- Pages 生产域名：https://douyin-downloader-git.pages.dev
+
+**当前实现方式**：Pages 的自定义域名要求有一条指向 `<project>.pages.dev` 的 CNAME，
+而 wrangler 的 OAuth 令牌只有 `zone:read`、没有 DNS 写权限，无法自动创建该记录。
+因此改用 **Workers 自定义域名**（Cloudflare 会自动创建 DNS 记录并签发证书），
+由 `edge-proxy/` 下的 Worker 把请求透明转发到 Pages 生产站点。
+
+```
+douyin.mindscopelab.org  →  Worker: douyin-mindscopelab-edge  →  douyin-downloader-git.pages.dev
+```
+
+部署 / 更新边缘转发：
+
+```bash
+cd edge-proxy
+node ../node_modules/wrangler/bin/wrangler.js deploy
+```
+
+**如果想换成 Pages 原生绑定**（少一层转发），在 Cloudflare Dashboard 手动加一条记录，
+然后移除 `edge-proxy/wrangler.toml` 里的 routes 并重新部署：
+
+| 类型 | 名称 | 内容 | 代理 |
+|------|------|------|------|
+| CNAME | `douyin` | `douyin-downloader-git.pages.dev` | 开启 |
+
+然后在 Pages 项目 → **Custom domains** 添加 `douyin.mindscopelab.org` 即可。
 
 ## 安全设计
 
