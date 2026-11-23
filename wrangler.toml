@@ -9,5 +9,8 @@ compatibility_flags = []
 # 解析核心：自建匿名 H5 解析（完全免费，无需 API Key）
 PARSER_PROVIDER = "self-hosted-h5"
 
-# 是否在未配置 TURNSTILE_SECRET_KEY 时放行（本地开发 true，生产务必配密钥后设 false）
-ALLOW_UNVERIFIED = "false"
+# 未配置 TURNSTILE_SECRET_KEY 时是否放行解析请求。
+# 当前为 true：免费方案开箱即用，无需申请 Turnstile。
+# 公网若担心被刷，请在 Cloudflare Dashboard 建 Turnstile widget，
+# 配好 TURNSTILE_SECRET_KEY / TURNSTILE_SITE_KEY 后改回 false。
+ALLOW_UNVERIFIED = "true"
