@@ -42,7 +42,7 @@ function downloadUrl(source: string, filename: string, inline = false) {
   return `/api/download?source=${encodeURIComponent(source)}&filename=${encodeURIComponent(filename)}${inline ? '&inline=1' : ''}`
 }
 
-function Icon({ name, size = 16 }: { name: 'sun' | 'moon' | 'copy' | 'check' | 'arrow' | 'link' | 'play' | 'image' | 'music' | 'zip'; size?: number }) {
+function Icon({ name, size = 16 }: { name: 'sun' | 'moon' | 'copy' | 'check' | 'arrow' | 'link' | 'play' | 'image' | 'music' | 'zip' | 'close'; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 20 20', 'aria-hidden': true } as const
   switch (name) {
     case 'sun':
@@ -65,6 +65,8 @@ function Icon({ name, size = 16 }: { name: 'sun' | 'moon' | 'copy' | 'check' | '
       return <svg {...common}><path d="M8 15V5l9-2v10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><circle cx="5.5" cy="15.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><circle cx="14.5" cy="13.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
     case 'zip':
       return <svg {...common}><path d="M10 2.5v11m0 0l-3.5-3.5M10 13.5l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M3.5 14.5v2A1.5 1.5 0 0 0 5 18h10a1.5 1.5 0 0 0 1.5-1.5v-2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
+    case 'close':
+      return <svg {...common}><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
   }
 }
 
@@ -79,6 +81,7 @@ export default function App() {
   const [packing, setPacking] = useState(false)
   const [packStatus, setPackStatus] = useState('')
   const [broken, setBroken] = useState<Record<number, boolean>>({})
+  const [zoom, setZoom] = useState<number | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const attr = document.documentElement.getAttribute('data-theme')
     if (attr === 'light' || attr === 'dark') return attr
@@ -270,6 +273,26 @@ export default function App() {
   // 抖音接口里 title 常与文案相同，避免重复展示
   const heading = d?.title && d.title !== caption ? d.title : ''
   const busyLabel = busy ? (phase === 'verifying' ? '验证中…' : '解析中…') : '开始解析'
+  const canClear = input.length > 0 && !busy
+
+  const clearInput = () => {
+    setInput('')
+    setError('')
+    setPhase('idle')
+  }
+
+  /** 图集灯箱：打开时锁滚动、ESC 关闭 */
+  useEffect(() => {
+    if (zoom === null) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoom(null) }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [zoom])
 
   return (
     <div className="app">
@@ -317,11 +340,14 @@ export default function App() {
                 spellCheck={false}
               />
               <div className="input-actions">
-                <button type="button" className="btn btn-main" onClick={onParse} disabled={busy}>
+                <button type="button" className="btn" onClick={clearInput} disabled={!canClear} title="清空输入与结果">
+                  <Icon name="close" size={14} /> 清空
+                </button>
+                <span className="input-hint"><Icon name="link" size={14} /> 例如 v.douyin.com/xxxxx/</span>
+                <button type="button" className="btn btn-main btn-parse" onClick={onParse} disabled={busy}>
                   {busyLabel}
                   {!busy && <Icon name="arrow" size={17} />}
                 </button>
-                <span className="input-hint"><Icon name="link" size={14} /> 例如 v.douyin.com/xxxxx/</span>
               </div>
               {config.turnstileRequired && <div ref={turnstileRef} className="turnstile" />}
               {phase === 'error' && <div className="alert" role="alert">{error}</div>}
@@ -374,6 +400,9 @@ export default function App() {
                             alt={`第 ${i + 1} 张`}
                             loading={i < 5 ? 'eager' : 'lazy'}
                             decoding="async"
+                            onClick={() => setZoom(i)}
+                            className="tile-img"
+                            title="点击查看大图"
                           />
                           <a href={downloadUrl(src, `${d.title || 'image'}_${i + 1}`)} download>保存</a>
                         </div>
@@ -448,6 +477,25 @@ export default function App() {
         <span>仅供个人学习与研究使用 · 内容版权归平台及原作者所有</span>
         <span className="foot-right">免费 · 匿名 · 无水印</span>
       </footer>
+
+      {zoom !== null && d && d.images[zoom] && (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label={`第 ${zoom + 1} 张大图`} onClick={() => setZoom(null)}>
+          <div className="lightbox-inner" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={broken[zoom] ? downloadUrl(d.images[zoom], `${d.title || 'image'}_${zoom + 1}`, true) : d.images[zoom]}
+              alt={`第 ${zoom + 1} 张`}
+              onClick={() => setZoom(null)}
+            />
+            <div className="lightbox-bar">
+              <span className="lightbox-idx">{zoom + 1} / {d.images.length}</span>
+              <a className="lightbox-save" href={downloadUrl(d.images[zoom], `${d.title || 'image'}_${zoom + 1}`)} download onClick={(e) => e.stopPropagation()}>保存原图</a>
+              <button type="button" className="lightbox-x" aria-label="关闭大图" onClick={() => setZoom(null)}>
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
