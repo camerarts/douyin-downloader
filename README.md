@@ -57,20 +57,20 @@ git branch -M main
 git push -u origin main
 ```
 
-### 2. Cloudflare Pages 连接仓库
+### 2. Cloudflare Pages 连接仓库（已配置，push 自动部署）
 
+本项目已通过 Cloudflare API 绑定 GitHub 仓库，**每次 push 到 main 自动构建部署**：
+
+- 线上地址：https://douyin-downloader-git.pages.dev
+- GitHub 仓库：https://github.com/camerarts/douyin-downloader
+- 构建配置：`npm run build` → 输出 `dist`，根目录 `/`
+- 环境变量：免费方案无需任何解析 Key；`ALLOW_UNVERIFIED=true`（默认放行）
+
+如需手动在 Dashboard 重建 Git 连接：
 1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-2. 选中 GitHub 仓库，分支 `main`
-3. 构建配置：
-   - Framework preset：`Vite`
-   - Build command：`npm run build`
-   - Build output directory：`dist`
-   - Root directory：`/`
-4. 环境变量：
-   - **免费方案无需配置任何解析 Key**
-   - 公网部署建议配 Turnstile（见下一步）：`TURNSTILE_SECRET_KEY`（secret）、`TURNSTILE_SITE_KEY`（公开值）
-   - `ALLOW_UNVERIFIED` = `false`
-5. **Save and Deploy**，之后每次 push 自动重新部署。
+2. 选中仓库 `camerarts/douyin-downloader`，分支 `main`
+3. Build command：`npm run build`，输出目录：`dist`
+4. 之后每次 push 自动部署。
 
 ### 3. 开启 Turnstile（公网建议）
 
