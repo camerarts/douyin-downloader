@@ -1,0 +1,13 @@
+name = "douyin-downloader"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "./dist"
+
+# 页面函数运行在边缘，Node.js 兼容关闭即可（代码全用 Web API）
+compatibility_flags = []
+
+[vars]
+# 解析服务商：douparse（默认）
+PARSER_PROVIDER = "douparse"
+
+# 是否在未配置 TURNSTILE_SECRET_KEY 时放行（本地开发 true，生产务必配密钥后设 false）
+ALLOW_UNVERIFIED = "false"
